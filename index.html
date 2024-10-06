@@ -1,15 +1,22 @@
-<!-- In your index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Parking Data</title>
+    <title>Parking App</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 400px; /* Set the height of the map */
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Parking Data</h1>
-    <div id="parkingDataContainer">Loading data...</div> <!-- Element to display data -->
+    <!-- Your HTML content -->
+    <div id="map"></div>
+    <div id="parkingDataContainer"></div>
     <script src="script.js"></script>
 </body>
 </html>
