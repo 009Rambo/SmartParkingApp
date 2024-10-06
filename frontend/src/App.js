@@ -27,5 +27,5 @@ function App(props) {
 }
 
 export default GoogleApiWrapper({
-    apiKey: process.env.REACT_APP_API_KEY // Replace with your actual API key
+    apiKey: process.env.REACT_APP_API_KEY 
 })(App);
