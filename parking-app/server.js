@@ -3,7 +3,7 @@ import cors from 'cors';
 import fetch from 'node-fetch'; // Importing node-fetch
 
 const app = express();
-const PORT = 3000;
+const PORT = 4000;
 
 app.use(cors());
 
@@ -23,6 +23,7 @@ app.get('/proxy', async (req, res) => {
     }
 });
 
+//start the server
 app.listen(PORT, () => {
     console.log(`Proxy server running at http://localhost:${PORT}`);
 });
