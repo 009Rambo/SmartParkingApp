@@ -14,7 +14,7 @@ const ParkingData = (props) => {
 
     const style = {
         width: '100%',
-        height: '50%'
+        height: '50%',
     };
 
     useEffect(() => {
@@ -41,22 +41,24 @@ const ParkingData = (props) => {
             // Remove "POLYGON ((" and "))" from the string
             const cleanedCoords = geoLoc.replace('POLYGON ((', '').replace('))', '').trim();
             // Split by comma and convert to array of coordinates
-            const coordinatePairs = cleanedCoords.split(', ').map(coord => {
+            const coordinatePairs = cleanedCoords.split(', ').map((coord) => {
                 const [x, y] = coord.split(' ').map(Number);
                 const wgs84Coord = proj4(proj4Def, [x, y]);
                 return { lat: wgs84Coord[1], lng: wgs84Coord[0] };
             });
-            console.log("Coordinate pairs is ", coordinatePairs);
             return coordinatePairs;
         };
 
         // Extract coordinates from the first record
         if (parkingData.length > 0) {
-            console.log("parking data is ", parkingData);
-            const coords = extractCoordinates(parkingData[0].GEOLOC);
+            console.log('parking data is ', parkingData);
+            let coords = [];
+            parkingData.forEach((oneParkingData) => {
+                const oneCoord = extractCoordinates(oneParkingData.GEOLOC);
+                coords.push(oneCoord);
+            });
             setPolygonCoords(coords);
         }
-        
     }, [parkingData]);
 
     if (loading) {
@@ -66,7 +68,7 @@ const ParkingData = (props) => {
     if (error) {
         return <div>Error: {error}</div>; // Show error message
     }
-
+    
     return (
         <div>
             <h2>Parking Data</h2>
@@ -80,21 +82,28 @@ const ParkingData = (props) => {
             <Map
                 google={props.google} // Access the google prop correctly
                 zoom={14}
-                initialCenter={{ lat: 61.4978, lng: 23.7610 }} // Initial center of the map (Tampere)
-                style={style}>
-                <Polygon
-                    paths={polygonCoords}
-                    strokeColor="#0000FF"
-                    strokeOpacity={0.8}
-                    strokeWeight={2}
-                    fillColor="#0000FF"
-                    fillOpacity={0.35}
-                 />
+                initialCenter={{ lat: 61.4978, lng: 23.761 }} // Initial center of the map (Tampere)
+                style={style}
+            >
+                {polygonCoords.map((polygon, index) => {
+                    console.log("Polygon is ", polygon);
+                    return (
+                        <Polygon
+                            key={index}
+                            paths={polygon}
+                            strokeColor="#0000FF"
+                            strokeOpacity={0.8}
+                            strokeWeight={2}
+                            fillColor="#fc0341"
+                            fillOpacity={0.35}
+                        />
+                    );
+                })}
             </Map>
         </div>
     );
 };
 
 export default GoogleApiWrapper({
-    apiKey: process.env.REACT_APP_API_KEY 
+    apiKey: process.env.REACT_APP_API_KEY,
 })(ParkingData);
