@@ -1,10 +1,21 @@
 // src/ParkingData.js
 import React, { useEffect, useState } from 'react';
+import proj4 from 'proj4'; // Ensure proj4 is imported
+import { Map, GoogleApiWrapper, Polygon } from 'google-maps-react';
 
-const ParkingData = () => {
+// Define the projection for UTM Zone 35 (Tampere)
+const proj4Def = '+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs';
+
+const ParkingData = (props) => {
     const [parkingData, setParkingData] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true); // Loading state
+    const [polygonCoords, setPolygonCoords] = useState([]);
+
+    const style = {
+        width: '100%',
+        height: '50%'
+    };
 
     useEffect(() => {
         const fetchParkingData = async () => {
@@ -25,6 +36,29 @@ const ParkingData = () => {
         fetchParkingData();
     }, []);
 
+    useEffect(() => {
+        const extractCoordinates = (geoLoc) => {
+            // Remove "POLYGON ((" and "))" from the string
+            const cleanedCoords = geoLoc.replace('POLYGON ((', '').replace('))', '').trim();
+            // Split by comma and convert to array of coordinates
+            const coordinatePairs = cleanedCoords.split(', ').map(coord => {
+                const [x, y] = coord.split(' ').map(Number);
+                const wgs84Coord = proj4(proj4Def, [x, y]);
+                return { lat: wgs84Coord[1], lng: wgs84Coord[0] };
+            });
+            console.log("Coordinate pairs is ", coordinatePairs);
+            return coordinatePairs;
+        };
+
+        // Extract coordinates from the first record
+        if (parkingData.length > 0) {
+            console.log("parking data is ", parkingData);
+            const coords = extractCoordinates(parkingData[0].GEOLOC);
+            setPolygonCoords(coords);
+        }
+        
+    }, [parkingData]);
+
     if (loading) {
         return <div>Loading...</div>; // Show loading message
     }
@@ -43,8 +77,24 @@ const ParkingData = () => {
                     </li>
                 ))}
             </ul>
+            <Map
+                google={props.google} // Access the google prop correctly
+                zoom={14}
+                initialCenter={{ lat: 61.4978, lng: 23.7610 }} // Initial center of the map (Tampere)
+                style={style}>
+                <Polygon
+                    paths={polygonCoords}
+                    strokeColor="#0000FF"
+                    strokeOpacity={0.8}
+                    strokeWeight={2}
+                    fillColor="#0000FF"
+                    fillOpacity={0.35}
+                 />
+            </Map>
         </div>
     );
 };
 
-export default ParkingData;
+export default GoogleApiWrapper({
+    apiKey: process.env.REACT_APP_API_KEY 
+})(ParkingData);
