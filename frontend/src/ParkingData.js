@@ -25,7 +25,7 @@ const ParkingData = (props) => {
                     throw new Error('Network response was not ok');
                 }
                 const data = await response.json();
-                setParkingData(data.result.records); // Adjust based on the actual data structure
+                setParkingData(data.features); // Adjust based on the actual data structure
             } catch (error) {
                 setError(error.message);
             } finally {
@@ -37,27 +37,16 @@ const ParkingData = (props) => {
     }, []);
 
     useEffect(() => {
-        const extractCoordinates = (geoLoc) => {
-            // Remove "POLYGON ((" and "))" from the string
-            const cleanedCoords = geoLoc.replace('POLYGON ((', '').replace('))', '').trim();
-            // Split by comma and convert to array of coordinates
-            const coordinatePairs = cleanedCoords.split(', ').map((coord) => {
-                const [x, y] = coord.split(' ').map(Number);
-                const wgs84Coord = proj4(proj4Def, [x, y]);
-                return { lat: wgs84Coord[1], lng: wgs84Coord[0] };
-            });
-            return coordinatePairs;
-        };
-
         // Extract coordinates from the first record
         if (parkingData.length > 0) {
-            console.log('parking data is ', parkingData);
-            let coords = [];
+            let polygons = [];
             parkingData.forEach((oneParkingData) => {
-                const oneCoord = extractCoordinates(oneParkingData.GEOLOC);
-                coords.push(oneCoord);
+                const coordinates = oneParkingData.geometry.coordinates;
+                coordinates.forEach(oneCoordinate => {
+                    polygons.push(oneCoordinate);
+                })
             });
-            setPolygonCoords(coords);
+            setPolygonCoords(polygons);
         }
     }, [parkingData]);
 
@@ -72,25 +61,27 @@ const ParkingData = (props) => {
     return (
         <div>
             <h2>Parking Data</h2>
-            <ul>
+            {/* <ul>
                 {parkingData.map((record, index) => (
                     <li key={index}>
                         Type: {record.KOHDETYYPPI}, Total Spaces: {record.PAIKKOJEN_LUKUMÄÄRÄ}, Price: {record.HINTA}€
                     </li>
                 ))}
-            </ul>
+            </ul> */}
             <Map
                 google={props.google} // Access the google prop correctly
-                zoom={14}
+                zoom={12}
                 initialCenter={{ lat: 61.4978, lng: 23.761 }} // Initial center of the map (Tampere)
                 style={style}
             >
                 {polygonCoords.map((polygon, index) => {
-                    console.log("Polygon is ", polygon);
+                    const convertedCoordinates = polygon.map(oneCoordinate => {
+                        return { lat: oneCoordinate[1], lng: oneCoordinate[0] }; // Return latitude and longitude
+                    });
                     return (
                         <Polygon
                             key={index}
-                            paths={polygon}
+                            paths={convertedCoordinates}
                             strokeColor="#0000FF"
                             strokeOpacity={0.8}
                             strokeWeight={2}
