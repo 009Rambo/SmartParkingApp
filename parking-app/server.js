@@ -8,7 +8,7 @@ const PORT = 4000;
 app.use(cors());
 
 app.get('/proxy', async (req, res) => {
-    const apiUrl = 'https://data.tampere.fi/data/api/3/action/datastore_search?resource_id=6a7cb189-54db-4895-8570-22a1c2c2446e&limit=5';
+    const apiUrl = 'https://services1.arcgis.com/sswNXkUiRoWtrx0t/arcgis/rest/services/LIIPI_Autoliitynt%C3%A4pys%C3%A4k%C3%B6inti/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson';
 
     try {
         const response = await fetch(apiUrl);
