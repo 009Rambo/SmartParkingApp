@@ -56,7 +56,7 @@ const ParkingData = (props) => {
 
   const onMarkerClick = (props, marker) => {
     setSelectedPlace({
-      id: props.id,
+      name: props.name,
       tyyppi: props.tyyppi,
       status: props.status,
       spaces: props.spaces,
@@ -117,7 +117,7 @@ const ParkingData = (props) => {
               key={index}
               position={{ lat, lng }}
               onClick={onMarkerClick}
-              id={record.properties.id}
+              name={record.properties.name}
               tyyppi={record.properties.tyyppi}
               status={record.properties.status}
               spaces={record.properties.autopaikk}
@@ -133,7 +133,7 @@ const ParkingData = (props) => {
         <InfoWindow marker={activeMarker} visible={showInfoWindow}>
           <div>
             <h3>Parking Info</h3>
-            <p>Id: {selectedPlace.id}</p>
+            <p>Name: {selectedPlace.name}</p>
             <p>Type: {selectedPlace.tyyppi}</p>
             <p>Status: {selectedPlace.status}</p>
             <p>Spaces: {selectedPlace.spaces}</p>
