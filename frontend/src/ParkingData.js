@@ -1,100 +1,151 @@
 // src/ParkingData.js
-import React, { useEffect, useState } from 'react';
-import proj4 from 'proj4'; // Ensure proj4 is imported
-import { Map, GoogleApiWrapper, Polygon } from 'google-maps-react';
+import React, { useEffect, useState } from "react";
+import {
+  Map,
+  GoogleApiWrapper,
+  Polygon,
+  Marker,
+  InfoWindow,
+} from "google-maps-react";
 
 // Define the projection for UTM Zone 35 (Tampere)
-const proj4Def = '+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs';
+const proj4Def = "+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs";
 
 const ParkingData = (props) => {
-    const [parkingData, setParkingData] = useState([]);
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(true); // Loading state
-    const [polygonCoords, setPolygonCoords] = useState([]);
+  const [parkingData, setParkingData] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [polygonCoords, setPolygonCoords] = useState([]);
+  const [activeMarker, setActiveMarker] = useState(null); // State for the active marker
+  const [selectedPlace, setSelectedPlace] = useState({}); // State for selected marker info
+  const [showInfoWindow, setShowInfoWindow] = useState(false); // State to control InfoWindow visibility
 
-    const style = {
-        width: '100%',
-        height: '50%',
+  const style = {
+    width: "100%",
+    height: "80%",
+  };
+
+  useEffect(() => {
+    const fetchParkingData = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/proxy");
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        setParkingData(data.features); // Assuming data.features is an array of parking data
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    useEffect(() => {
-        const fetchParkingData = async () => {
-            try {
-                const response = await fetch('http://localhost:4000/proxy'); // Adjusted to your backend endpoint
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                setParkingData(data.features); // Adjust based on the actual data structure
-            } catch (error) {
-                setError(error.message);
-            } finally {
-                setLoading(false); // Set loading to false when done
-            }
-        };
+    fetchParkingData();
+  }, []);
 
-        fetchParkingData();
-    }, []);
-
-    useEffect(() => {
-        // Extract coordinates from the first record
-        if (parkingData.length > 0) {
-            let polygons = [];
-            parkingData.forEach((oneParkingData) => {
-                const coordinates = oneParkingData.geometry.coordinates;
-                coordinates.forEach(oneCoordinate => {
-                    polygons.push(oneCoordinate);
-                })
-            });
-            setPolygonCoords(polygons);
-        }
-    }, [parkingData]);
-
-    if (loading) {
-        return <div>Loading...</div>; // Show loading message
+  useEffect(() => {
+    // Set polygon coordinates
+    if (parkingData.length > 0) {
+      const polygons = parkingData.map(
+        (oneParkingData) => oneParkingData.geometry.coordinates
+      );
+      setPolygonCoords(polygons);
     }
+  }, [parkingData]);
 
-    if (error) {
-        return <div>Error: {error}</div>; // Show error message
+  const onMarkerClick = (props, marker) => {
+    setSelectedPlace({
+      id: props.id,
+      tyyppi: props.tyyppi,
+      status: props.status,
+      spaces: props.spaces,
+      sahkoauto: props.sahkoauto,
+      inva: props.inva,
+    });
+    setActiveMarker(marker);
+    setShowInfoWindow(true);
+  };
+
+  const onMapClick = () => {
+    if (showInfoWindow) {
+      setShowInfoWindow(false);
+      setActiveMarker(null);
     }
-    
-    return (
-        <div>
-            <h2>Parking Data</h2>
-            {/* <ul>
-                {parkingData.map((record, index) => (
-                    <li key={index}>
-                        Type: {record.KOHDETYYPPI}, Total Spaces: {record.PAIKKOJEN_LUKUMÄÄRÄ}, Price: {record.HINTA}€
-                    </li>
-                ))}
-            </ul> */}
-            <Map
-                google={props.google} // Access the google prop correctly
-                zoom={12}
-                initialCenter={{ lat: 61.4978, lng: 23.761 }} // Initial center of the map (Tampere)
-                style={style}
-            >
-                {polygonCoords.map((polygon, index) => {
-                    const convertedCoordinates = polygon.map(oneCoordinate => {
-                        return { lat: oneCoordinate[1], lng: oneCoordinate[0] }; // Return latitude and longitude
-                    });
-                    return (
-                        <Polygon
-                            key={index}
-                            paths={convertedCoordinates}
-                            strokeColor="#0000FF"
-                            strokeOpacity={0.8}
-                            strokeWeight={2}
-                            fillColor="#fc0341"
-                            fillOpacity={0.35}
-                        />
-                    );
-                })}
-            </Map>
-        </div>
-    );
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  return (
+    <div>
+      <h2>Parking Data</h2>
+      <Map
+        google={props.google}
+        zoom={12}
+        initialCenter={{ lat: 60.1699, lng: 24.9384 }}
+        style={style}
+        onClick={onMapClick} // Hide InfoWindow when map is clicked
+      >
+        {polygonCoords.map((polygon, index) => {
+          const convertedCoordinates = polygon[0].map(([lng, lat]) => ({
+            lat,
+            lng,
+          }));
+          return (
+            <Polygon
+              key={index}
+              paths={convertedCoordinates}
+              strokeColor="#f00202"
+              strokeOpacity={1}
+              strokeWeight={2}
+              fillColor="#1be6f5"
+              fillOpacity={1}
+            />
+          );
+        })}
+
+        {parkingData.map((record, index) => {
+          const [lng, lat] = record.geometry.coordinates[0][0];
+          return (
+            <Marker
+              key={index}
+              position={{ lat, lng }}
+              onClick={onMarkerClick}
+              id={record.properties.id}
+              tyyppi={record.properties.tyyppi}
+              status={record.properties.status}
+              spaces={record.properties.autopaikk}
+              sahkoauto={record.properties.sahkoauto}
+              inva={record.properties.inva}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png", // URL for a blue Google Maps marker
+              }}
+            />
+          );
+        })}
+
+        <InfoWindow marker={activeMarker} visible={showInfoWindow}>
+          <div>
+            <h3>Parking Info</h3>
+            <p>Id: {selectedPlace.id}</p>
+            <p>Type: {selectedPlace.tyyppi}</p>
+            <p>Status: {selectedPlace.status}</p>
+            <p>Spaces: {selectedPlace.spaces}</p>
+            <p>Electric Cars: {selectedPlace.sahkoauto}</p>
+            <p>Disabilty Space: {selectedPlace.inva}</p>
+          </div>
+        </InfoWindow>
+      </Map>
+    </div>
+  );
 };
 
 export default GoogleApiWrapper({
-    apiKey: process.env.REACT_APP_API_KEY,
+  apiKey: "AIzaSyBBss7i8tmTmtPnn3j8YKRFChwDeMzvsUk",
 })(ParkingData);
