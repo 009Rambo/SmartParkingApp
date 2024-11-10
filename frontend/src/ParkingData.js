@@ -7,6 +7,7 @@ import {
   Marker,
   InfoWindow,
 } from "google-maps-react";
+import useGeoLocation from "./geolocation";
 
 // Define the projection for UTM Zone 35 (Tampere)
 const proj4Def = "+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs";
@@ -19,6 +20,12 @@ const ParkingData = (props) => {
   const [activeMarker, setActiveMarker] = useState(null); // State for the active marker
   const [selectedPlace, setSelectedPlace] = useState({}); // State for selected marker info
   const [showInfoWindow, setShowInfoWindow] = useState(false); // State to control InfoWindow visibility
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const location = useGeoLocation();
+
+  const refreshLocation = () => {
+    setForceRefresh(!forceRefresh); // Toggle to force re-render
+  };
 
   const style = {
     width: "100%",
@@ -85,10 +92,22 @@ const ParkingData = (props) => {
   return (
     <div>
       <h2>Parking Data</h2>
+      <button onClick={refreshLocation}>Refresh Location</button>
+      <p>
+        Current Location:
+        {location.loaded
+          ? `${location.coordinates.lat}, ${location.coordinates.lng}`
+          : "Loading..."}
+      </p>
       <Map
         google={props.google}
         zoom={12}
-        initialCenter={{ lat: 60.1699, lng: 24.9384 }}
+        //initialCenter={{ lat: 60.1699, lng: 24.9384 }}
+        initialCenter={
+          location.loaded
+            ? { lat: location.coordinates.lat, lng: location.coordinates.lng }
+            : { lat: 60.45148, lng: 22.26869 }
+        }
         style={style}
         onClick={onMapClick} // Hide InfoWindow when map is clicked
       >
